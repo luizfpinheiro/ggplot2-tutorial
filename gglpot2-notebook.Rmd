@@ -1,0 +1,63 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(ipeaData)
+
+dados_brutos <- read_xlsx('./despesasBrasil2008a2017.xlsx', skip = 9)
+pibs <- ipeadata("BM12_PIBAC12")
+
+dados_brutos
+pibs
+
+# VALOR EM DEZEMBRO DE 2008 a 2017
+pibs <- pibs[MES=="12" & ANO %in% (2008:2017)]$VALVALOR
+
+#NOMEANDO COLUNAS DO VETOR COM ANOS RESPECTIVOS - 2008 a 2017
+names(pibs) <- as.character(c(2008:2017))
+pibs
+dados_brutos
+# SUBSTITUINDO TITULOS DAS COLUNAS DO DF datos_brutos c/ Categoria - 2008 - 2009 - ... 2017
+colnames(dados_brutos)<- c("Categoria", names(pibs))
+
+for (i in 2:length(dados_brutos)) {
+  dados_brutos[,i] <- dados_brutos[,i] / (pibs[colnames(dados_brutos[,i])]*1000000)
+}
+
+dados_brutos
+
+dados <- dados_brutos %>%
+  gather(key = "Ano", value = "Valor", `2008`:`2017`) %>%
+  filter(!(Categoria %in% c("Amortização da Dívida", "Juros"))) %>%
+  mutate(Categoria = factor(Categoria),
+         Categoria = fct_reorder(Categoria, Valor),
+         Ano = as.integer(Ano))
+
+dados_brutos$Categoria
+dados
+
+# GRÁFICO ANO x VALOR C/ OBJETOS GEOMETRICOS (PONTOS) NA COR AZUL:
+ggplot(dados, aes(x=Ano, y=Valor)) +
+  geom_point(color = "blue", shape=1)
+
+# GRÁFICO ANO x CATEGORIA C/ TAMANHO DOS PONTOS DEFINIDO PELO VALOR ASSOCIADO:
+ggplot(dados, aes(x = Ano, y = Categoria, size = Valor)) +
+  geom_point()
+
+# GRÁFICO ANO x VALOR C/ TAMANHO DOS PONTOS DEFINIDO PELO VALOR ASSOCIADO 
+# E CATEGORIAS SEPARADAS POR COR:
+ggplot(dados, aes(x = Ano, y = Valor, color = Categoria, size = Valor)) +
+  geom_point()
+
+
+```
+
+
